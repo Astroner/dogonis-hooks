@@ -47,24 +47,45 @@ type RT<DataType> = [boolean, DataType | null, any] & {
  *  )
  * }
  */
-export const usePromiseCall = <Result, ArgsType extends any[] = any[]>(
-    call: (...args: ArgsType) => Promise<Result>,
+export function usePromiseCall<Result>(call: () => Promise<Result>, stopWhile?: boolean): RT<Result>
+export function usePromiseCall<Result, ArgsType extends any[] = any[]>(
+    call: (...args: ArgsType) => Promise<Result>, 
     args: ArgsType,
     stopWhile?: boolean
-): RT<Result> => {
+): RT<Result>
+export function usePromiseCall <Result, ArgsType extends any[] = any[]>(
+    call: (...args: ArgsType) => Promise<Result>,
+    second?: ArgsType | boolean,
+    third?: boolean
+): RT<Result> {
+
+    const realArgs = second instanceof Array ? second : [] as any;
+    const realStopWhile = second instanceof Array ? !!third : !!second;
+
     const [result, setResult] = useState<Result | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<any>(null);
 
-    const caller = useCallback(call, args)
+    const toReturn = useMemo<RT<Result>>(() => {
+        return Object.assign(
+            [loading, result, error] as [boolean, Result | null, any],
+            {
+                result,
+                loading,
+                error
+            }
+        )
+    }, [result, loading, error])
+
+    const caller = useCallback(call, realArgs)
 
     useEffect(() => {
-        if(stopWhile) return
+        if(realStopWhile) return
         let mounted = true;
 
         setLoading(true)
 
-        caller(...args)
+        caller(...realArgs)
             .then(res => {
                 if(!mounted) return
                 setResult(res)
@@ -81,18 +102,7 @@ export const usePromiseCall = <Result, ArgsType extends any[] = any[]>(
         return () => {
             mounted = false;
         }
-    }, [caller, stopWhile, ...args])
-
-    const toReturn = useMemo<RT<Result>>(() => {
-        return Object.assign(
-            [loading, result, error] as [boolean, Result | null, any],
-            {
-                result,
-                loading,
-                error
-            }
-        )
-    }, [result, loading, error])
+    }, [caller, realStopWhile, ...realArgs])
 
     return toReturn
 }
