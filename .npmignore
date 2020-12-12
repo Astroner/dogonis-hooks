@@ -1,0 +1,12 @@
+node_modules/
+src/
+index.html
+runner.jsx
+dist/
+.cache
+tsconfig.json
+README.md
+package-lock.json
+.git/
+.gitignore
+.npmignore
